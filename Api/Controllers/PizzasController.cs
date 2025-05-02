@@ -34,5 +34,25 @@ namespace Api.Controllers
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetPizzas), new { id = pizza.Id }, pizza);
         }
+
+
+        /// <summary>
+        /// Удалить пиццу (только для админов)
+        /// </summary>
+        /// <param name="id">ID пиццы</param>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePizza(int id)
+        {
+            var pizza = await _context.Pizzas.FindAsync(id);
+            if (pizza == null)
+                return NotFound();
+            _context.Pizzas.Remove(pizza);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+
+
+
     }
 }

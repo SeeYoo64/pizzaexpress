@@ -1,0 +1,44 @@
+﻿@page "/menu"
+@using Web.Models
+@using Web.Services
+@inject PizzasService PizzasService
+@inject CartService CartService
+@inject NavigationManager NavManager
+
+<h1>Our Menu</h1>
+
+@if (pizzas == null)
+{
+    <p>Loading pizzas...</p>
+}
+else
+{
+    <div class="menu-grid">
+        @foreach (var pizza in pizzas)
+        {
+            <div class="pizza-card" key="@pizza.Id">
+                <h2>@pizza.Name</h2>
+                <p>@pizza.Description</p>
+                <p>$@pizza.Price</p>
+                <button @onclick="() => AddToCart(pizza)">Add to Cart</button>
+            </div>
+        }
+    </div>
+}
+
+<a href="/cart">View Cart</a>
+
+@code {
+    private Pizza[]? pizzas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pizzas = await PizzasService.GetPizzasAsync();
+    }
+
+    private async void AddToCart(Pizza pizza)
+    {
+        await CartService.AddItemAsync(pizza);
+        StateHasChanged(); // Optional, but helps UI update
+    }
+}

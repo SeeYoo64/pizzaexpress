@@ -1,0 +1,54 @@
+﻿@page "/cart"
+@using Web.Models
+@using Web.Services
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+
+<h1>Your Cart</h1>
+
+@if (cartItems == null || !cartItems.Any())
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in cartItems)
+        {
+            <li>
+                @item.Pizza.Name x @item.Quantity - $@(item.Pizza.Price * item.Quantity)
+                <button @onclick="() => RemoveItem(item.Pizza.Id)">Remove</button>
+            </li>
+        }
+    </ul>
+    <h3>Total: $@TotalPrice</h3>
+    <button @onclick="Checkout">Proceed to Checkout</button>
+}
+
+<a href="/menu">Back to Menu</a>
+
+@code {
+    private List<CartItem>? cartItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cartItems = await CartService.GetCartItemsAsync();
+        CartService.OnChange += StateHasChanged;
+    }
+
+    private async void RemoveItem(int pizzaId)
+    {
+        await CartService.RemoveItemAsync(pizzaId);
+        cartItems = await CartService.GetCartItemsAsync();
+    }
+
+    private decimal TotalPrice => cartItems?.Sum(i => i.Pizza.Price * i.Quantity) ?? 0;
+
+    private void Checkout()
+    {
+        // Optionally send cart data to backend here
+        CartService.ClearCartAsync();
+        cartItems = new List<CartItem>();
+        NavigationManager.NavigateTo("/confirmation");
+    }
+}
