@@ -16,7 +16,13 @@ else
         @foreach (var item in cartItems)
         {
             <li>
-                @item.Pizza.Name x @item.Quantity - $@(item.Pizza.Price * item.Quantity)
+                @item.Pizza.Name - $@(item.Pizza.Price * item.Quantity)
+                <ul>
+                    @foreach (var ingredient in item.Pizza.Description.Ingredients)
+                    {
+                        <li>@ingredient</li>
+                    }
+                </ul>
                 <button @onclick="() => RemoveItem(item.Pizza.Id)">Remove</button>
             </li>
         }
