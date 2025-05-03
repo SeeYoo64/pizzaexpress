@@ -22,7 +22,7 @@ namespace Application.Dtos
 
         public bool IsVegetarian { get; set; }
 
-        public string PhotoPath { get; set; } = string.Empty; // Только для чтения
+        public string? PhotoPath { get; set; } = string.Empty; // Только для чтения
     }
 
     public class DescriptionDto

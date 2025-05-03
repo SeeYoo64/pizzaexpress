@@ -3,7 +3,8 @@
 @using Web.Services
 @inject PizzasService PizzasService
 @inject CartService CartService
-@inject NavigationManager NavManager
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <h1>Our Menu</h1>
 
@@ -16,17 +17,19 @@ else
     <div class="menu-grid">
         @foreach (var pizza in pizzas)
         {
-            <div class="pizza-card">
+            <div class="pizza-card" key="@pizza.Id">
+
                 <h2>@pizza.Name</h2>
+                <img src="@GetPizzaImageUrl(pizza)" alt="@pizza.Name" class="pizza-image" />
                 <p>@pizza.Description.Text</p>
+                <p>Price: $@pizza.Price</p>
+                <p>Weight: @pizza.Description.Weight gramm</p>
                 <ul>
                     @foreach (var ingredient in pizza.Description.Ingredients)
                     {
                         <li>@ingredient</li>
                     }
                 </ul>
-                <p>Weight: @pizza.Description.Weight g</p>
-                <p>Price: $@pizza.Price</p>
                 <button @onclick="() => AddToCart(pizza)">Add to Cart</button>
             </div>
         }
@@ -46,6 +49,14 @@ else
     private async void AddToCart(Pizza pizza)
     {
         await CartService.AddItemAsync(pizza);
-        StateHasChanged(); // Optional, but helps UI update
+        StateHasChanged();
+    }
+
+    private string GetPizzaImageUrl(Pizza pizza)
+    {
+        if (string.IsNullOrEmpty(pizza.PhotoPath) || pizza.PhotoPath == " ")
+        return "/images/default-pizza.jpg"; 
+
+        return new Uri(Http.BaseAddress, pizza.PhotoPath).AbsoluteUri;
     }
 }

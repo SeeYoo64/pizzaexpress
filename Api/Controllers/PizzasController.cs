@@ -35,8 +35,7 @@ namespace Api.Controllers
             try
             {
                 var pizzas = await _pizzaService.GetAllAsync();
-                // Log raw data
-                Console.WriteLine($"GetPizzas Raw Data: {JsonSerializer.Serialize(pizzas)}");
+
                 return Ok(pizzas);
             }
             catch (Exception ex)

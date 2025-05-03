@@ -13,7 +13,7 @@ namespace Domain
         public Description Description { get; set; } = new();
         public decimal Price { get; set; }
         public bool IsVegetarian { get; set; }
-        public string PhotoPath { get; set; } = string.Empty;
+        public string? PhotoPath { get; set; } = string.Empty;
     }
 
 
