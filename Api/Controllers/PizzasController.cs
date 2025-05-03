@@ -1,4 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using Api.Models;
+using Application.Dtos;
+using Application.Services;
 using Domain;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +14,11 @@ namespace Api.Controllers
     [ApiController]
     public class PizzasController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _environment;
+        private readonly IPizzaService _pizzaService;
 
-        public PizzasController(AppDbContext context, IWebHostEnvironment environment)
+        public PizzasController(IPizzaService pizzaService)
         {
-            _context = context;
-            _environment = environment;
+            _pizzaService = pizzaService;
         }
 
         /// <summary>
@@ -32,26 +34,17 @@ namespace Api.Controllers
         {
             try
             {
-                var pizzas = await _context.Pizzas.ToListAsync();
-                // Формируем полные URL для PhotoPath
-                foreach (var pizza in pizzas)
-                {
-                    if (!string.IsNullOrEmpty(pizza.PhotoPath))
-                    {
-                        pizza.PhotoPath = $"{Request.Scheme}://{Request.Host}/images/{pizza.PhotoPath}";
-                    }
-                }
+                var pizzas = await _pizzaService.GetAllAsync();
+                // Log raw data
+                Console.WriteLine($"GetPizzas Raw Data: {JsonSerializer.Serialize(pizzas)}");
                 return Ok(pizzas);
             }
             catch (Exception ex)
             {
-                // Логирование ошибки (предполагается, что Serilog настроен)
                 Console.WriteLine($"Ошибка при получении пицц: {ex.Message}");
                 return StatusCode(500, "Внутренняя ошибка сервера.");
             }
         }
-
-
 
         /// <summary>
         /// Получить пиццу по ID.
@@ -69,15 +62,10 @@ namespace Api.Controllers
         {
             try
             {
-                var pizza = await _context.Pizzas.FindAsync(id);
+                var pizza = await _pizzaService.GetByIdAsync(id);
                 if (pizza == null)
                 {
                     return NotFound($"Пицца с ID {id} не найдена.");
-                }
-
-                if (!string.IsNullOrEmpty(pizza.PhotoPath))
-                {
-                    pizza.PhotoPath = $"{Request.Scheme}://{Request.Host}/images/{pizza.PhotoPath}";
                 }
                 return Ok(pizza);
             }
@@ -88,21 +76,17 @@ namespace Api.Controllers
             }
         }
 
-
-
         /// <summary>
         /// Создать новую пиццу (только для админов).
         /// </summary>
-        /// <param name="pizzaDto">Данные пиццы.</param>
-        /// <returns>Созданная пицца.</returns>
-        /// <response code="201">Пицца создана.</response>
-        /// <response code="400">Некорректные данные.</response>
-        /// <response code="500">Ошибка сервера.</response>
+        /// <param name="pizzaDto">Данные пиццы в формате JSON.</param>
+        /// <param name="image">Файл изображения (jpg, jpeg, png, опционально).</param>
         [HttpPost]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<Pizza>> CreatePizza([FromBody] PizzaDto pizzaDto)
+        public async Task<ActionResult<Pizza>> CreatePizza([FromForm] PizzaCreateRequest request)
         {
             try
             {
@@ -111,30 +95,12 @@ namespace Api.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var pizza = new Pizza
-                {
-                    Name = pizzaDto.Name,
-                    Description = new Description
-                    {
-                        Text = pizzaDto.Description.Text,
-                        Ingredients = pizzaDto.Description.Ingredients ?? new List<string>(),
-                        Weight = pizzaDto.Description.Weight
-                    },
-                    Price = pizzaDto.Price,
-                    IsVegetarian = pizzaDto.IsVegetarian,
-                    PhotoPath = pizzaDto.PhotoPath
-                };
-
-                _context.Pizzas.Add(pizza);
-                await _context.SaveChangesAsync();
-
-                // Формируем полный URL для PhotoPath
-                if (!string.IsNullOrEmpty(pizza.PhotoPath))
-                {
-                    pizza.PhotoPath = $"{Request.Scheme}://{Request.Host}/images/{pizza.PhotoPath}";
-                }
-
+                var pizza = await _pizzaService.CreateAsync(request.PizzaDto, request.Image);
                 return CreatedAtAction(nameof(GetPizza), new { id = pizza.Id }, pizza);
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -143,50 +109,34 @@ namespace Api.Controllers
             }
         }
 
-
-
         /// <summary>
         /// Обновить пиццу (только для админов).
         /// </summary>
         /// <param name="id">ID пиццы.</param>
-        /// <param name="pizzaDto">Обновленные данные пиццы.</param>
-        /// <returns>Нет содержимого.</returns>
-        /// <response code="204">Пицца обновлена.</response>
-        /// <response code="400">Некорректные данные.</response>
-        /// <response code="404">Пицца не найдена.</response>
-        /// <response code="500">Ошибка сервера.</response>
+        /// <param name="pizzaDto">Обновленные данные пиццы в формате JSON.</param>
+        /// <param name="image">Новый файл изображения (опционально).</param>
         [HttpPut("{id}")]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdatePizza(int id, [FromBody] PizzaDto pizzaDto)
+        public async Task<IActionResult> UpdatePizza(int id, [FromForm] PizzaCreateRequest request)
         {
             try
             {
+
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
                 }
 
-                var pizza = await _context.Pizzas.FindAsync(id);
-                if (pizza == null)
-                {
-                    return NotFound($"Пицца с ID {id} не найдена.");
-                }
-
-                pizza.Name = pizzaDto.Name;
-                pizza.Description.Text = pizzaDto.Description.Text;
-                pizza.Description.Ingredients = pizzaDto.Description.Ingredients ?? new List<string>();
-                pizza.Description.Weight = pizzaDto.Description.Weight;
-                pizza.Price = pizzaDto.Price;
-                pizza.IsVegetarian = pizzaDto.IsVegetarian;
-                pizza.PhotoPath = pizzaDto.PhotoPath;
-
-                _context.Pizzas.Update(pizza);
-                await _context.SaveChangesAsync();
-
-                return NoContent();
+                await _pizzaService.UpdateAsync(id, request.PizzaDto, request.Image);
+                return Ok(request.PizzaDto);
+            }
+            catch (ValidationException ex)
+            {
+                return ex.Message.Contains("не найдена") ? NotFound(ex.Message) : BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -194,8 +144,6 @@ namespace Api.Controllers
                 return StatusCode(500, "Внутренняя ошибка сервера.");
             }
         }
-
-
 
         /// <summary>
         /// Удалить пиццу (только для админов).
@@ -213,15 +161,12 @@ namespace Api.Controllers
         {
             try
             {
-                var pizza = await _context.Pizzas.FindAsync(id);
-                if (pizza == null)
-                {
-                    return NotFound($"Пицца с ID {id} не найдена.");
-                }
-
-                _context.Pizzas.Remove(pizza);
-                await _context.SaveChangesAsync();
+                await _pizzaService.DeleteAsync(id);
                 return NoContent();
+            }
+            catch (ValidationException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
@@ -229,39 +174,5 @@ namespace Api.Controllers
                 return StatusCode(500, "Внутренняя ошибка сервера.");
             }
         }
-    }
-
-    /// <summary>
-    /// DTO для создания и обновления пиццы.
-    /// </summary>
-    public class PizzaDto
-    {
-        [Required(ErrorMessage = "Название пиццы обязательно.")]
-        [StringLength(100, ErrorMessage = "Название не должно превышать 100 символов.")]
-        public string Name { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Описание пиццы обязательно.")]
-        public DescriptionDto Description { get; set; } = new();
-
-        [Required(ErrorMessage = "Цена обязательна.")]
-        [Range(0.01, 10000, ErrorMessage = "Цена должна быть от 0.01 до 10000.")]
-        public decimal Price { get; set; }
-
-        public bool IsVegetarian { get; set; }
-
-        [StringLength(200, ErrorMessage = "Путь к изображению не должен превышать 200 символов.")]
-        public string PhotoPath { get; set; } = string.Empty;
-    }
-
-    public class DescriptionDto
-    {
-        [Required(ErrorMessage = "Текст описания обязателен.")]
-        [StringLength(500, ErrorMessage = "Текст описания не должен превышать 500 символов.")]
-        public string Text { get; set; } = string.Empty;
-
-        public List<string> Ingredients { get; set; } = new();
-
-        [StringLength(50, ErrorMessage = "Вес не должен превышать 50 символов.")]
-        public string Weight { get; set; } = string.Empty;
     }
 }

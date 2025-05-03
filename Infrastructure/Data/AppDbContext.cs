@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Domain;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Text.Json;
 
 namespace Infrastructure.Data
 {
@@ -20,11 +22,14 @@ namespace Infrastructure.Data
                 {
                     desc.Property(d => d.Text);
                     desc.Property(d => d.Weight);
-                    desc.Property(d => d.Ingredients)
+                    desc.Property(d => d.Ingredients).HasColumnType("jsonb")
                     .HasConversion(
-                        v => string.Join(",", v),
-                        v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList()
-                        );
+                        v => JsonSerializer.Serialize(v, new JsonSerializerOptions { WriteIndented = false }),
+                        v => JsonSerializer.Deserialize<List<string>>(v, new JsonSerializerOptions()) ?? new List<string>(),
+                        new ValueComparer<List<string>>(
+                        (c1, c2) => c1.SequenceEqual(c2),
+                        c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                        c => c.ToList()));
 
                 });
 
