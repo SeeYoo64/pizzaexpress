@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Components.Forms;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components.Forms;
 
-namespace Application.Dtos
+namespace Web.Models
 {
+    public class PizzaCreateRequest
+    {
+        public PizzaDto PizzaDto { get; set; } = new();
+        public IBrowserFile? Image { get; set; }
+    }
+
     public class PizzaDto
     {
         [Required(ErrorMessage = "Название пиццы обязательно.")]
@@ -37,9 +38,28 @@ namespace Application.Dtos
         [StringLength(50, ErrorMessage = "Вес не должен превышать 50 символов.")]
         public string Weight { get; set; } = string.Empty;
     }
-    public class PizzaCreateRequest
+
+
+    public class PizzaFormModel
     {
-        public PizzaDto PizzaDto { get; set; } = new();
+        [Required(ErrorMessage = "Название пиццы обязательно.")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Описание пиццы обязательно.")]
+        public string DescriptionText { get; set; } = string.Empty;
+
+        public string Weight { get; set; } = string.Empty;
+
+        public List<string> Ingredients { get; set; } = new();
+
+        [Required(ErrorMessage = "Цена обязательна.")]
+        [Range(0.01, 10000, ErrorMessage = "Цена должна быть от 0.01 до 10000.")]
+        public decimal Price { get; set; }
+
+        public bool IsVegetarian { get; set; }
+
         public IBrowserFile? Image { get; set; }
     }
+
+
 }

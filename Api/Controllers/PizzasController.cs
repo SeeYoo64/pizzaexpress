@@ -7,6 +7,7 @@ using Domain;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Api.Controllers
 {
@@ -85,17 +86,39 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<Pizza>> CreatePizza([FromForm] PizzaCreateRequest request)
+        public async Task<ActionResult<Pizza>> CreatePizza([FromForm] string pizzaDto, [FromForm] IFormFile? image)
         {
             try
             {
-                if (!ModelState.IsValid)
+                // Десериализуем JSON-строку в PizzaDto
+                var dto = JsonSerializer.Deserialize<PizzaDto>(pizzaDto, new JsonSerializerOptions
                 {
-                    return BadRequest(ModelState);
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (dto == null)
+                {
+                    return BadRequest("Некорректный формат PizzaDto.");
                 }
 
-                var pizza = await _pizzaService.CreateAsync(request.PizzaDto, request.Image);
+                // Валидация модели
+                var validationContext = new ValidationContext(dto);
+                var validationResults = new List<ValidationResult>();
+                if (!Validator.TryValidateObject(dto, validationContext, validationResults, true))
+                {
+                    var errors = validationResults.ToDictionary(
+                        vr => vr.MemberNames.FirstOrDefault() ?? "Unknown",
+                        vr => vr.ErrorMessage);
+                    return BadRequest(new { Errors = errors });
+                }
+
+                var pizza = await _pizzaService.CreateAsync(dto, image);
                 return CreatedAtAction(nameof(GetPizza), new { id = pizza.Id }, pizza);
+            }
+            catch (JsonException ex)
+            {
+                return BadRequest($"Ошибка десериализации PizzaDto: {ex.Message}");
             }
             catch (ValidationException ex)
             {
@@ -120,21 +143,46 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdatePizza(int id, [FromForm] PizzaCreateRequest request)
+        public async Task<IActionResult> UpdatePizza(int id, [FromForm] string pizzaDto, [FromForm] IFormFile? image)
         {
             try
             {
-
-                if (!ModelState.IsValid)
+                Console.WriteLine($"Получен PizzaDto для обновления ID {id}: {pizzaDto}");
+                var dto = JsonSerializer.Deserialize<PizzaDto>(pizzaDto, new JsonSerializerOptions
                 {
-                    return BadRequest(ModelState);
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (dto == null)
+                {
+                    return BadRequest("Некорректный формат PizzaDto.");
                 }
 
-                await _pizzaService.UpdateAsync(id, request.PizzaDto, request.Image);
-                return Ok(request.PizzaDto);
+                Console.WriteLine($"Десериализован PizzaDto: Name={dto.Name}, Price={dto.Price}, Description.Text={dto.Description.Text}");
+
+                var validationContext = new ValidationContext(dto);
+                var validationResults = new List<ValidationResult>();
+                if (!Validator.TryValidateObject(dto, validationContext, validationResults, true))
+                {
+                    var errors = validationResults.ToDictionary(
+                        vr => vr.MemberNames.FirstOrDefault() ?? "Unknown",
+                        vr => vr.ErrorMessage);
+                    Console.WriteLine($"Ошибки валидации: {JsonSerializer.Serialize(errors)}");
+                    return BadRequest(new { Errors = errors });
+                }
+
+                await _pizzaService.UpdateAsync(id, dto, image);
+                return NoContent();
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"Ошибка десериализации: {ex.Message}");
+                return BadRequest($"Ошибка десериализации PizzaDto: {ex.Message}");
             }
             catch (ValidationException ex)
             {
+                Console.WriteLine($"Ошибка валидации: {ex.Message}");
                 return ex.Message.Contains("не найдена") ? NotFound(ex.Message) : BadRequest(ex.Message);
             }
             catch (Exception ex)

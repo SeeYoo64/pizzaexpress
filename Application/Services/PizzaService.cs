@@ -13,7 +13,7 @@ namespace Application.Services
         Task<IEnumerable<Pizza>> GetAllAsync();
         Task<Pizza?> GetByIdAsync(int id);
         Task<Pizza> CreateAsync(PizzaDto pizzaDto, IFormFile? image);
-        Task UpdateAsync(int id, PizzaDto pizzaDto, IFormFile? image);
+        Task<Pizza> UpdateAsync(int id, PizzaDto pizzaDto, IFormFile? image);
         Task DeleteAsync(int id);
     }
 
@@ -65,26 +65,30 @@ namespace Application.Services
                 IsVegetarian = pizzaDto.IsVegetarian
             };
 
-            if (image != null)
-            {
-                pizza.PhotoPath = await _fileStorageService.SavePizzaImageAsync(0, image);
-            }
-
+            // 1. Сохраняем пиццу без изображения
             var createdPizza = await _pizzaRepository.AddAsync(pizza);
 
-            if (!string.IsNullOrEmpty(pizza.PhotoPath))
+            // 2. Если есть изображение — сохраняем по правильному пути
+            if (image != null)
             {
-                var newPath = pizza.PhotoPath.Replace("photopizza0", $"photopizza{createdPizza.Id}");
-                // Переименование файла через FileStorageService можно реализовать, если потребуется
-                createdPizza.PhotoPath = newPath;
+                var photoPath = await _fileStorageService.SavePizzaImageAsync(createdPizza.Id, image);
+                createdPizza.PhotoPath = photoPath;
+
+                // 3. Обновляем пиццу с путём
                 await _pizzaRepository.UpdateAsync(createdPizza);
             }
 
-            createdPizza.PhotoPath = _fileStorageService.GetFullUrl(createdPizza.PhotoPath);
+            // 4. Преобразуем в абсолютный URL
+            if (!string.IsNullOrEmpty(createdPizza.PhotoPath))
+            {
+                createdPizza.PhotoPath = _fileStorageService.GetFullUrl(createdPizza.PhotoPath);
+            }
+
             return createdPizza;
         }
 
-        public async Task UpdateAsync(int id, PizzaDto pizzaDto, IFormFile? image)
+
+        public async Task<Pizza> UpdateAsync(int id, PizzaDto pizzaDto, IFormFile? image)
         {
             ValidatePizzaDto(pizzaDto);
 
@@ -100,11 +104,24 @@ namespace Application.Services
 
             if (image != null)
             {
-                _fileStorageService.DeletePizzaImageFolder(id);
+                // Удаляем старую фотку, если была
+                if (!string.IsNullOrEmpty(pizza.PhotoPath))
+                {
+                    _fileStorageService.DeletePizzaImageFolder(id);
+                }
+
                 pizza.PhotoPath = await _fileStorageService.SavePizzaImageAsync(id, image);
             }
 
             await _pizzaRepository.UpdateAsync(pizza);
+
+            if (!string.IsNullOrEmpty(pizza.PhotoPath))
+            {
+                pizza.PhotoPath = _fileStorageService.GetFullUrl(pizza.PhotoPath);
+            }
+
+            return pizza;
+
         }
 
         public async Task DeleteAsync(int id)

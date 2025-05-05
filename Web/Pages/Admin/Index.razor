@@ -1,0 +1,63 @@
+﻿@page "/admin/pizzas"
+@using Web.Models
+@using Web.Services
+@inject PizzaAdminService PizzaAdminService
+@inject NavigationManager NavManager
+@inject IJSRuntime JsRuntime
+
+<h1>Manage Pizzas</h1>
+
+@if (pizzas == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <a href="/admin/pizzas/create" class="btn btn-primary">Add New Pizza</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Is Vegetarian</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pizza in pizzas)
+            {
+                <tr>
+                    <td>@pizza.Name</td>
+                    <td>@pizza.Description.Text</td>
+                    <td>$@pizza.Price</td>
+                    <td>@(pizza.IsVegetarian ? "Yes" : "No")</td>
+                    <td>
+                        <a href="/admin/pizzas/edit/@pizza.Id" class="btn btn-sm btn-warning">Edit</a>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeletePizza(pizza.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Pizza>? pizzas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pizzas = await PizzaAdminService.GetPizzasAsync();
+    }
+
+    private async void DeletePizza(int id)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this pizza?");
+        if (confirmed)
+        {
+            await PizzaAdminService.DeletePizzaAsync(id);
+
+            NavManager.NavigateTo(NavManager.Uri, forceLoad: true);
+        }
+    }
+}
