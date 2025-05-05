@@ -42,13 +42,24 @@ public class CartService
         NotifyStateChanged();
     }
 
-    public async Task RemoveItemAsync(int pizzaId)
+    public async Task RemoveItemAsync(int pizzaId, bool removeAll = false)
     {
         var cart = await GetCartItemsAsync();
         var item = cart.FirstOrDefault(c => c.Pizza.Id == pizzaId);
+
         if (item != null)
         {
-            cart.Remove(item);
+            if (removeAll || item.Quantity <= 1)
+            {
+                // Remove the entire item if we're removing all or quantity is 1
+                cart.Remove(item);
+            }
+            else
+            {
+                // Just decrease the quantity by 1
+                item.Quantity--;
+            }
+
             await _localStorage.SetItemAsStringAsync("cart", JsonSerializer.Serialize(cart));
             NotifyStateChanged();
         }

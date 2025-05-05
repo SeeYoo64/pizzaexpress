@@ -23,7 +23,17 @@ else
                         <li>@ingredient</li>
                     }
                 </ul>
-                <button @onclick="() => RemoveItem(item.Pizza.Id)">Remove</button>
+                <!-- Quantity controls -->
+                <div class="quantity-controls">
+                    <button @onclick="() => DecreaseQuantity(item.Pizza.Id)">-</button>
+                    <span>@item.Quantity</span>
+                    <button @onclick="() => IncreaseQuantity(item.Pizza.Id)">+</button>
+                </div>
+
+                <!-- Remove all button -->
+                <button @onclick="() => RemoveAll(item.Pizza.Id)" class="remove-btn">
+                    Remove
+                </button>
             </li>
         }
     </ul>
@@ -42,9 +52,25 @@ else
         CartService.OnChange += StateHasChanged;
     }
 
-    private async void RemoveItem(int pizzaId)
+    private async Task IncreaseQuantity(int pizzaId)
     {
-        await CartService.RemoveItemAsync(pizzaId);
+        var pizza = cartItems.FirstOrDefault(i => i.Pizza.Id == pizzaId)?.Pizza;
+        if (pizza != null)
+        {
+            await CartService.AddItemAsync(pizza);
+            cartItems = await CartService.GetCartItemsAsync();
+        }
+    }
+
+    private async Task DecreaseQuantity(int pizzaId)
+    {
+        await CartService.RemoveItemAsync(pizzaId); // Decreases by 1
+        cartItems = await CartService.GetCartItemsAsync();
+    }
+
+    private async Task RemoveAll(int pizzaId)
+    {
+        await CartService.RemoveItemAsync(pizzaId, removeAll: true); // Removes all
         cartItems = await CartService.GetCartItemsAsync();
     }
 

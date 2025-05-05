@@ -1,4 +1,9 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject CartService CartService
+@using Web.Models
+@using Web.Services
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -7,6 +12,7 @@
     <main>
         <div class="top-row px-4">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <a href="/cart">View Cart (@Counts)</a>
         </div>
 
         <article class="content px-4">
@@ -14,3 +20,30 @@
         </article>
     </main>
 </div>
+
+@code {
+    private int Counts = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCartCount();
+        CartService.OnChange += HandleCartChanged;
+    }
+
+    private async Task LoadCartCount()
+    {
+        var cartItems = await CartService.GetCartItemsAsync();
+        Counts = cartItems?.Sum(item => item.Quantity) ?? 0; // Sum quantities for total items
+        StateHasChanged();
+    }
+
+    private async void HandleCartChanged()
+    {
+        await LoadCartCount();
+    }
+
+    public void Dispose()
+    {
+        CartService.OnChange -= HandleCartChanged;
+    }
+}
