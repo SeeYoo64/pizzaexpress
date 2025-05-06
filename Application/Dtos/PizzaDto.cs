@@ -37,9 +37,5 @@ namespace Application.Dtos
         [StringLength(50, ErrorMessage = "Вес не должен превышать 50 символов.")]
         public string Weight { get; set; } = string.Empty;
     }
-    public class PizzaCreateRequest
-    {
-        public PizzaDto PizzaDto { get; set; } = new();
-        public IBrowserFile? Image { get; set; }
-    }
+
 }

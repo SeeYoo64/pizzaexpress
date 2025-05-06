@@ -34,6 +34,16 @@ namespace Infrastructure.Data
                 });
 
 
+            modelBuilder.Entity<Order>()
+            .HasMany(o => o.Items)
+            .WithOne(oi => oi.Order)
+            .HasForeignKey(oi => oi.OrderId);
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Pizza)
+                .WithMany()
+                .HasForeignKey(oi => oi.PizzaId);
+
         }
 
 

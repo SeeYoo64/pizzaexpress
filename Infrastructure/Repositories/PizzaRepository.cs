@@ -13,6 +13,7 @@ namespace Infrastructure.Repositories
     {
         Task<IEnumerable<Pizza>> GetAllAsync();
         Task<Pizza?> GetByIdAsync(int id);
+        Task<IEnumerable<Pizza>> GetByIdsAsync(IEnumerable<int> ids);
         Task<Pizza> AddAsync(Pizza pizza);
         Task UpdateAsync(Pizza pizza);
         Task DeleteAsync(int id);
@@ -26,7 +27,12 @@ namespace Infrastructure.Repositories
         {
             _context = context;
         }
-
+        public async Task<IEnumerable<Pizza>> GetByIdsAsync(IEnumerable<int> ids)
+        {
+            return await _context.Pizzas
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+        }
         public async Task<IEnumerable<Pizza>> GetAllAsync()
         {
             return await _context.Pizzas.ToListAsync();

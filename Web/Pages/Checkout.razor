@@ -1,0 +1,121 @@
+﻿@page "/cart/checkout"
+@using Web.Models
+@using Web.Services
+@inject CartService CartService
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<h3>Checkout</h3>
+
+@if (cartItems == null || !cartItems.Any())
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Order Summary</h4>
+            <ul>
+                @foreach (var item in cartItems)
+                {
+                    <li>@item.Pizza.Name x @item.Quantity — $@(item.Pizza.Price * item.Quantity)</li>
+                }
+            </ul>
+            <h5>Total: $@TotalPrice</h5>
+        </div>
+
+        <div class="col-md-6">
+            <h4>Delivery Info</h4>
+            <EditForm Model="@orderModel" OnValidSubmit="SubmitOrder">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-group">
+                    <label>Name</label>
+                    <InputText @bind-Value="orderModel.CustomerName" class="form-control" />
+                    <ValidationMessage For="@(() => orderModel.CustomerName)" />
+                </div>
+
+                <div class="form-group">
+                    <label>Phone</label>
+                    <InputText @bind-Value="orderModel.Phone" class="form-control" />
+                    <ValidationMessage For="@(() => orderModel.Phone)" />
+                </div>
+
+                <div class="form-group">
+                    <label>Address</label>
+                    <InputText @bind-Value="orderModel.Address" class="form-control" />
+                    <ValidationMessage For="@(() => orderModel.Address)" />
+                </div>
+
+                <button type="submit" class="btn btn-success">Place Order</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CartItem>? cartItems;
+    private OrderModel orderModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        cartItems = await CartService.GetCartItemsAsync();
+        if (cartItems == null || !cartItems.Any())
+        {
+            NavManager.NavigateTo("/cart");
+        }
+    }
+
+    private decimal TotalPrice => cartItems?.Sum(i => i.Pizza.Price * i.Quantity) ?? 0;
+
+    private async Task SubmitOrder()
+    {
+        var request = new PlaceOrderRequest
+            {
+                CustomerName = orderModel.CustomerName,
+                Phone = orderModel.Phone,
+                Address = orderModel.Address,
+                Items = cartItems!.Select(i => new OrderItemDto
+                {
+                    PizzaId = i.Pizza.Id,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/orders", request);
+            if (response.IsSuccessStatusCode)
+            {
+                await CartService.ClearCartAsync();
+                NavManager.NavigateTo("/order/confirmation");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error placing order: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception during order submission: {ex.Message}");
+        }
+    }
+
+    public class OrderModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        public string CustomerName { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Phone is required")]
+        public string Phone { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Address is required")]
+        public string Address { get; set; } = string.Empty;
+    }
+
+
+
+}

@@ -2,6 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Data;
 using Domain;
+using Application.Dtos;
+using System.ComponentModel.DataAnnotations;
+using Application.Services;
+using System.Text.Json;
 
 namespace Api.Controllers
 {
@@ -9,39 +13,41 @@ namespace Api.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public OrdersController(AppDbContext context) => _context = context;
+        private readonly IOrderService _orderService;
 
+        public OrdersController(IOrderService orderService)
+        {
+            _orderService = orderService;
+        }
 
         /// <summary>
         /// Создать новый заказ
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult> CreateOrder([FromBody] CreateOrderDto orderDto)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> PlaceOrder([FromBody] PlaceOrderRequestDto request)
         {
-            var order = new Order
+            try
             {
-                TotalPrice = orderDto.TotalPrice,
-                Items = orderDto.Items.Select(i => new OrderItem { PizzaId = i.PizzaId, Quantity = i.Quantity }).ToList()
-            };
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(CreateOrder), new { id = order.Id }, order);
+                Console.WriteLine($"Получен PlaceOrderRequest: {JsonSerializer.Serialize(request)}");
+
+                var order = await _orderService.PlaceOrderAsync(request);
+                return CreatedAtAction(nameof(PlaceOrder), new { id = order.Id }, null);
+            }
+            catch (ValidationException ex)
+            {
+                Console.WriteLine($"Ошибка валидации: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при создании заказа: {ex.Message}");
+                return StatusCode(500, "Внутренняя ошибка сервера.");
+            }
         }
 
+
     }
-
-    public class CreateOrderDto
-    {
-        public List<OrderItemDto> Items { get; set; } = new();
-        public decimal TotalPrice { get; set; }
-    }
-
-    public class OrderItemDto
-    {
-        public int PizzaId { get; set; }
-        public int Quantity { get; set; }
-    }
-
-
 }

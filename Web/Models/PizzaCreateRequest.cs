@@ -61,5 +61,19 @@ namespace Web.Models
         public IBrowserFile? Image { get; set; }
     }
 
+    public class PlaceOrderRequest
+    {
+        public string CustomerName { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public List<OrderItemDto> Items { get; set; } = new();
+    }
+
+    public class OrderItemDto
+    {
+        public int PizzaId { get; set; }
+        public int Quantity { get; set; }
+    }
+
 
 }

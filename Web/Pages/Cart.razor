@@ -78,9 +78,6 @@ else
 
     private void Checkout()
     {
-        // Optionally send cart data to backend here
-        CartService.ClearCartAsync();
-        cartItems = new List<CartItem>();
-        NavigationManager.NavigateTo("/confirmation");
+        NavigationManager.NavigateTo("/cart/checkout");
     }
 }
