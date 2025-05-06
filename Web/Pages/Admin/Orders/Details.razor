@@ -1,0 +1,94 @@
+﻿@page "/admin/orders/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@using Application.Dtos
+@using System.Text.Json
+
+<h3>Order #@Id</h3>
+
+@if (order == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-header">Delivery Info</div>
+        <div class="card-body">
+            <p><strong>Name:</strong> @order.CustomerName</p>
+            <p><strong>Phone:</strong> @order.Phone</p>
+            <p><strong>Address:</strong> @order.Address</p>
+        </div>
+    </div>
+
+    <h4>Items</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Pizza</th>
+                <th>Quantity</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in order.Items)
+            {
+                <tr>
+                    <td>@item.PizzaName</td>
+                    <td>@item.Quantity</td>
+                    <td>$@(item.Price * item.Quantity)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5>Total price: @order.TotalPrice</h5>
+    <h4>Update Status</h4>
+    <select class="form-select w-25" @bind="selectedStatus">
+        @foreach (var status in Enum.GetNames(typeof(OrderStatus)))
+        {
+            <option value="@status">@status</option>
+        }
+    </select>
+    <button class="btn btn-success mt-2" @onclick="UpdateStatus">Save Status</button>
+}
+
+<a href="/admin/orders" class="btn btn-secondary">← Back to Orders</a>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private OrderDto? order;
+    private string selectedStatus = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        order = await Http.GetFromJsonAsync<OrderDto>($"api/orders/{Id}");
+        if (order != null)
+        {
+            selectedStatus = order.Status;
+        }
+        Console.WriteLine(($"Order loaded successfully: {JsonSerializer.Serialize(order)}"));
+    }
+
+    private async Task UpdateStatus()
+    {
+        var dto = new UpdateOrderStatusDto { Status = selectedStatus };
+        var response = await Http.PutAsJsonAsync($"api/orders/{Id}/status", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            NavManager.NavigateTo("admin/orders");
+        }
+    }
+}
+
+@functions {
+    public enum OrderStatus
+    {
+        Pending,
+        Processing,
+        Shipped,
+        Delivered,
+        Cancelled
+    }
+}

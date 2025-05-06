@@ -1,0 +1,71 @@
+﻿@page "/admin/orders"
+@using Application.Dtos
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<h3>Orders</h3>
+
+@if (orders == null)
+{
+    <p>Loading...</p>
+}
+else if (!orders.Any())
+{
+    <p>No orders found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in orders)
+            {
+                <tr>
+                    <td>@order.Id</td>
+                    <td>@order.CustomerName</td>
+                    <td>
+                        <span class="badge bg-@GetStatusColor(order.Status)">@order.Status</span>
+                    </td>
+                    <td>$@order.TotalPrice</td>
+                    <td>@order.CreatedAt.ToShortDateString()</td>
+                    <td>
+                        <a href="/admin/orders/@order.Id" class="btn btn-sm btn-primary">View</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a href="/admin" class="btn btn-secondary">← Back to Admin</a>
+
+@code {
+    private List<OrderDto>? orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await Http.GetFromJsonAsync<List<OrderDto>>("api/orders");
+    }
+
+    private string GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "warning",
+            "Processing" => "info",
+            "Shipped" => "primary",
+            "Delivered" => "success",
+            "Cancelled" => "danger",
+            _ => "secondary"
+        };
+    }
+}

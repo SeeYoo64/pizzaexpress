@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace Domain
 {
+    public enum OrderStatus
+    {
+        Pending,
+        Processing,
+        Shipped,
+        Delivered,
+        Cancelled
+    }
     public class Order
     {
         public int Id { get; set; }
@@ -23,6 +31,7 @@ namespace Domain
         public decimal TotalPrice { get; set; }
 
         public DateTime CreatedAt { get; set; }
+        public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
         public List<OrderItem> Items { get; set; } = new();
     }

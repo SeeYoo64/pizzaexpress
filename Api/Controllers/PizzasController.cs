@@ -86,6 +86,7 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult<Pizza>> CreatePizza([FromForm] string pizzaDto, [FromForm] IFormFile? image)
         {
             try
@@ -143,6 +144,7 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> UpdatePizza(int id, [FromForm] string pizzaDto, [FromForm] IFormFile? image)
         {
             try

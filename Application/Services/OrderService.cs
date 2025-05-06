@@ -13,6 +13,9 @@ namespace Application.Services
     public interface IOrderService
     {
         Task<Order> PlaceOrderAsync(PlaceOrderRequestDto request);
+        Task<IEnumerable<Order>> GetAllOrdersAsync();
+        Task<OrderDto?> GetOrderByIdAsync(int id);
+        Task UpdateOrderStatusAsync(int id, OrderStatus status);
     }
     public class OrderService : IOrderService
     {
@@ -63,5 +66,46 @@ namespace Application.Services
             // Сохранение заказа
             return await _orderRepository.CreateAsync(order);
         }
+
+        public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+        {
+            return await _orderRepository.GetAllAsync();
+        }
+
+        public async Task<OrderDto?> GetOrderByIdAsync(int id)
+        {
+            var order = await _orderRepository.GetByIdAsync(id);
+            if (order == null)
+            {
+                return null;
+            }
+
+            return new OrderDto
+            {
+                Id = order.Id,
+                CustomerName = order.CustomerName,
+                Phone = order.Phone,
+                Address = order.Address,
+                TotalPrice = order.TotalPrice,
+                CreatedAt = order.CreatedAt,
+                Status = order.Status.ToString(),
+                Items = order.Items.Select(i => new OrderItemDto
+                {
+                    PizzaId = i.PizzaId,
+                    PizzaName = i.Pizza?.Name ?? "Unknown", // Проверка на null
+                    Quantity = i.Quantity,
+                    Price = i.PriceAtOrder
+                }).ToList()
+            };
+        }
+
+        public async Task UpdateOrderStatusAsync(int id, OrderStatus status)
+        {
+            await _orderRepository.UpdateStatusAsync(id, status);
+        }
+
+
+
+
     }
 }

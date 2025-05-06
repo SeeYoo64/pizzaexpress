@@ -2,10 +2,11 @@
 using Domain;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Infrastructure.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<Pizza> Pizzas { get; set; }

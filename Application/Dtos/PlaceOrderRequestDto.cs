@@ -28,21 +28,4 @@ namespace Application.Dtos
     }
 
 
-    public class OrderItemDto
-    {
-        [Required(ErrorMessage = "ID пиццы обязателен.")]
-        [Range(1, int.MaxValue, ErrorMessage = "ID пиццы должен быть больше 0.")]
-        public int PizzaId { get; set; }
-
-        [Required(ErrorMessage = "Количество обязательно.")]
-        [Range(1, 100, ErrorMessage = "Количество должно быть от 1 до 100.")]
-        public int Quantity { get; set; }
-    }
-
-
-
-
-
-
-
 }
