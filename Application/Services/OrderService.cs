@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Application.Dtos;
 using Domain;
 using Infrastructure.Repositories;
+using Infrastructure.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Application.Services
 {
@@ -21,49 +23,56 @@ namespace Application.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IPizzaRepository _pizzaRepository;
-
-        public OrderService(IOrderRepository orderRepository, IPizzaRepository pizzaRepository)
+        private readonly ITelegramBotService _telegramBotService;
+        public OrderService(
+            IOrderRepository orderRepository, 
+            IPizzaRepository pizzaRepository,
+            ITelegramBotService telegramBotService)
         {
             _orderRepository = orderRepository;
             _pizzaRepository = pizzaRepository;
+            _telegramBotService = telegramBotService;
         }
 
         public async Task<Order> PlaceOrderAsync(PlaceOrderRequestDto request)
         {
-            // Валидация DTO
-            var context = new ValidationContext(request);
-            Validator.ValidateObject(request, context, true);
+            Validator.ValidateObject(request, new ValidationContext(request), true);
 
-            // Проверка существования пицц и сбор цен
             var pizzaIds = request.Items.Select(i => i.PizzaId).Distinct().ToList();
             var pizzas = await _pizzaRepository.GetByIdsAsync(pizzaIds);
+            var pizzaDict = pizzas.ToDictionary(p => p.Id);
 
-            // Validate that all requested pizzas exist
-            var missingPizzas = pizzaIds.Except(pizzas.Select(p => p.Id)).ToList();
+            var missingPizzas = pizzaIds.Except(pizzaDict.Keys).ToList();
             if (missingPizzas.Any())
-            {
-                throw new ValidationException($"The following pizzas were not found: {string.Join(", ", missingPizzas)}");
-            }
+                throw new ValidationException($"Пиццы не найдены: {string.Join(", ", missingPizzas)}");
 
-            // Создание заказа
+            var orderItems = request.Items.Select(i => new OrderItem
+            {
+                PizzaId = i.PizzaId,
+                Quantity = i.Quantity,
+                PriceAtOrder = pizzaDict[i.PizzaId].Price,
+                Pizza = pizzaDict[i.PizzaId]
+            }).ToList();
+
             var order = new Order
             {
                 CustomerName = request.CustomerName,
                 Phone = request.Phone,
                 Address = request.Address,
-                CreatedAt = DateTime.UtcNow,
-                Items = request.Items.Select(i => new OrderItem
-                {
-                    PizzaId = i.PizzaId,
-                    Quantity = i.Quantity,
-                    PriceAtOrder = pizzas.First(p => p.Id == i.PizzaId).Price
-                }).ToList()
+                CreatedAt = DateTime.Now,
+                Items = orderItems,
+                TotalPrice = orderItems.Sum(i => i.Quantity * i.PriceAtOrder)
             };
 
-            // Вычисление общей стоимости
-            order.TotalPrice = order.Items.Sum(i => i.Quantity * i.PriceAtOrder);
+            try
+            {
+                await _telegramBotService.SendOrderNotificationAsync(order);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString(), "Ошибка при отправке в Telegram");
+            }
 
-            // Сохранение заказа
             return await _orderRepository.CreateAsync(order);
         }
 

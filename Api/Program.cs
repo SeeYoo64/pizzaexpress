@@ -62,6 +62,8 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
+builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
+
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddCors(options =>
