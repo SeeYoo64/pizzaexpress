@@ -1,5 +1,7 @@
 ﻿@page "/admin/pizzas/create"
+@attribute [Authorize]
 @using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Web.Models
 @inject HttpClient Http

@@ -1,4 +1,5 @@
 ﻿@page "/admin/orders/{Id:int}"
+@attribute [Authorize]
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @using Application.Dtos

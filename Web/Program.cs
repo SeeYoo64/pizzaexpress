@@ -1,7 +1,9 @@
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Web;
+using Web.Auth;
 using Web.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -17,6 +19,9 @@ builder.Services.AddScoped(sp => new HttpClient {
 });
 
 
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<CustomAuthStateProvider>();
 
 builder.Services.AddBlazoredLocalStorage(config =>
 {

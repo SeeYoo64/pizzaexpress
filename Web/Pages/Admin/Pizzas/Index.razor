@@ -1,10 +1,11 @@
 ﻿@page "/admin/pizzas"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
 @using Web.Models
 @using Web.Services
 @inject PizzaAdminService PizzaAdminService
 @inject NavigationManager NavManager
 @inject IJSRuntime JsRuntime
-
 <h1>Manage Pizzas</h1>
 
 @if (pizzas == null)

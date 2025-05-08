@@ -1,10 +1,11 @@
 ﻿@page "/admin/pizzas/edit/{Id:int}"
+@attribute [Authorize]
 @using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Web.Models
 @inject HttpClient Http
 @inject NavigationManager NavManager
-
 <h3>Edit Pizza</h3>
 
 @if (isLoading)

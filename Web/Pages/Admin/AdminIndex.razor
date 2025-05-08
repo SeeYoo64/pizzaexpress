@@ -1,5 +1,9 @@
 ﻿@page "/admin"
+@attribute [Authorize]
+@using Web.Auth
 @layout MainLayout
+@inject CustomAuthStateProvider AuthService
+@inject NavigationManager NavManager
 
 <h3>Admin Panel</h3>
 
@@ -24,5 +28,14 @@
         </div>
     </div>
 
-
 </div>
+
+<button class="btn btn-danger" @onclick="Logout">Logout</button>
+
+@code {
+    private async Task Logout()
+    {
+        await AuthService.Logout();
+        NavManager.NavigateTo("/admin/login");
+    }
+}

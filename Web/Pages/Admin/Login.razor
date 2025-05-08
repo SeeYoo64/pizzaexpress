@@ -1,0 +1,55 @@
+﻿@page "/admin/login"
+@using Web.Auth
+@inject CustomAuthStateProvider AuthService
+@inject NavigationManager NavManager
+
+<h3>Admin Login</h3>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
+}
+
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Username</label>
+        <InputText @bind-Value="loginModel.Username" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Password</label>
+        <InputText @bind-Value="loginModel.Password" type="password" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+@code {
+    private LoginDto loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            await AuthService.Login(loginModel.Username, loginModel.Password);
+            NavManager.NavigateTo("/admin");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+
+        public class LoginDto
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
