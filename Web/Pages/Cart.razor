@@ -4,44 +4,38 @@
 @inject CartService CartService
 @inject NavigationManager NavigationManager
 
-<h1>Your Cart</h1>
-
+<section class="menu-header">
+    <h2>Your Cart</h2>
+</section>
 @if (cartItems == null || !cartItems.Any())
 {
     <p>Your cart is empty.</p>
 }
 else
 {
-    <ul>
+    <div class="cart-container">
         @foreach (var item in cartItems)
         {
-            <li>
-                @item.Pizza.Name - $@(item.Pizza.Price * item.Quantity)
-                <ul>
-                    @foreach (var ingredient in item.Pizza.Description.Ingredients)
-                    {
-                        <li>@ingredient</li>
-                    }
-                </ul>
-                <!-- Quantity controls -->
+            <div class="cart-item">
+                <div class="item-details">
+                    <h3>@item.Pizza.Name</h3>
+                    <p>$@item.Pizza.Price each</p>
+                </div>
                 <div class="quantity-controls">
                     <button @onclick="() => DecreaseQuantity(item.Pizza.Id)">-</button>
                     <span>@item.Quantity</span>
                     <button @onclick="() => IncreaseQuantity(item.Pizza.Id)">+</button>
                 </div>
-
-                <!-- Remove all button -->
-                <button @onclick="() => RemoveAll(item.Pizza.Id)" class="remove-btn">
-                    Remove
-                </button>
-            </li>
+                <button @onclick="() => RemoveAll(item.Pizza.Id)" class="remove-btn">🗑️</button>
+            </div>
         }
-    </ul>
-    <h3>Total: $@TotalPrice</h3>
-    <button @onclick="Checkout">Proceed to Checkout</button>
-}
+    </div>
 
-<a href="/menu">Back to Menu</a>
+    <div class="cart-total">
+        <p>Total: $@TotalPrice</p>
+        <button class="checkout-btn" @onclick="Checkout">Proceed to Checkout</button>
+    </div>
+}
 
 @code {
     private List<CartItem>? cartItems;
@@ -80,4 +74,5 @@ else
     {
         NavigationManager.NavigateTo("/cart/checkout");
     }
+
 }

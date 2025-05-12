@@ -4,33 +4,43 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Web.Models
 @using Web.Services
+@inject NavigationManager NavManager
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
+    
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-            <a href="/cart">View Cart (@Counts)</a>
-        </div>
+            <header>
+                <div class="logo">PizzaExpress</div>
+                <nav class="header-nav">
+                    <a href="/menu" class="nav-link">Menu</a>
 
-        <article class="content px-4">
+                    <div style="position:relative;display:inline-block;">
+                        <div class="cart-container-nav">
+                            <a href="/cart">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-badge">@Counts</span>
+                            </a>
+                        </div>
+                    </div>
+                    <AuthorizeView>
+                        <Authorized>
+                            <a href="/admin" class="nav-link">
+                                <span class="bi bi-shield-lock-fill"></span> Admin
+                            </a>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/admin/login" class="nav-link">
+                                <span class="bi bi-box-arrow-in-right"></span> Admin Login
+                            </a>
+                        </NotAuthorized>
+                        <Authorized>
+                            <button @onclick="Logout">Logout</button>
+                        </Authorized>
+                    </AuthorizeView>
+                </nav>
+            </header>
+            
             @Body
-        </article>
-        <AuthorizeView>
-    <Authorized>
-        <a href="/admin" class="nav-link">
-            <span class="bi bi-shield-lock-fill"></span> Admin
-        </a>
-    </Authorized>
-    <NotAuthorized>
-        <a href="/admin/login" class="nav-link">
-            <span class="bi bi-box-arrow-in-right"></span> Admin Login
-        </a>
-    </NotAuthorized>
-</AuthorizeView>
     </main>
 </div>
 
@@ -49,7 +59,10 @@
         Counts = cartItems?.Sum(item => item.Quantity) ?? 0; // Sum quantities for total items
         StateHasChanged();
     }
-
+    private void Logout()
+    {
+        NavManager.NavigateTo("/admin/login");
+    }
     private async void HandleCartChanged()
     {
         await LoadCartCount();

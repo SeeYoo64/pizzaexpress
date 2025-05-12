@@ -59,7 +59,7 @@ namespace Application.Services
                 CustomerName = request.CustomerName,
                 Phone = request.Phone,
                 Address = request.Address,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
                 Items = orderItems,
                 TotalPrice = orderItems.Sum(i => i.Quantity * i.PriceAtOrder)
             };

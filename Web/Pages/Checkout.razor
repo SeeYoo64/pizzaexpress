@@ -5,7 +5,7 @@
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
-<h3>Checkout</h3>
+<h2>Checkout</h2>
 
 @if (cartItems == null || !cartItems.Any())
 {
@@ -15,42 +15,51 @@ else
 {
     <div class="row">
         <div class="col-md-6">
-            <h4>Order Summary</h4>
-            <ul>
-                @foreach (var item in cartItems)
-                {
-                    <li>@item.Pizza.Name x @item.Quantity — $@(item.Pizza.Price * item.Quantity)</li>
-                }
-            </ul>
-            <h5>Total: $@TotalPrice</h5>
-        </div>
-
-        <div class="col-md-6">
-            <h4>Delivery Info</h4>
+            <h4>Delivery Information</h4>
             <EditForm Model="@orderModel" OnValidSubmit="SubmitOrder">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
-                <div class="form-group">
-                    <label>Name</label>
+                <div class="form-group mb-3">
+                    <label>Full Name</label>
                     <InputText @bind-Value="orderModel.CustomerName" class="form-control" />
                     <ValidationMessage For="@(() => orderModel.CustomerName)" />
                 </div>
 
-                <div class="form-group">
-                    <label>Phone</label>
-                    <InputText @bind-Value="orderModel.Phone" class="form-control" />
-                    <ValidationMessage For="@(() => orderModel.Phone)" />
-                </div>
-
-                <div class="form-group">
-                    <label>Address</label>
+                <div class="form-group mb-3">
+                    <label>Delivery Address</label>
                     <InputText @bind-Value="orderModel.Address" class="form-control" />
                     <ValidationMessage For="@(() => orderModel.Address)" />
                 </div>
 
-                <button type="submit" class="btn btn-success">Place Order</button>
+                <div class="form-group mb-3">
+                    <label>Phone Number</label>
+                    <InputText @bind-Value="orderModel.Phone" class="form-control" />
+                    <ValidationMessage For="@(() => orderModel.Phone)" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Place Order</button>
             </EditForm>
+        </div>
+
+        <div class="col-md-6">
+            <h4>Order Summary</h4>
+            <div class="order-summary-card">
+                <ul>
+                    @foreach (var item in cartItems)
+                    {
+                        <li>
+                            <span>@item.Quantity × @item.Pizza.Name</span>
+                            <span class="float-end">$@(item.Pizza.Price * item.Quantity)</span>
+                        </li>
+                    }
+                </ul>
+                <hr />
+                <div class="total-row">
+                    <strong>Total:</strong>
+                    <span class="float-end">$@TotalPrice</span>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -73,16 +82,16 @@ else
     private async Task SubmitOrder()
     {
         var request = new PlaceOrderRequest
+        {
+            CustomerName = orderModel.CustomerName,
+            Phone = orderModel.Phone,
+            Address = orderModel.Address,
+            Items = cartItems!.Select(i => new OrderItemDto
             {
-                CustomerName = orderModel.CustomerName,
-                Phone = orderModel.Phone,
-                Address = orderModel.Address,
-                Items = cartItems!.Select(i => new OrderItemDto
-                {
-                    PizzaId = i.Pizza.Id,
-                    Quantity = i.Quantity
-                }).ToList()
-            };
+                PizzaId = i.Pizza.Id,
+                Quantity = i.Quantity
+            }).ToList()
+        };
 
         try
         {
@@ -115,7 +124,4 @@ else
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Address is required")]
         public string Address { get; set; } = string.Empty;
     }
-
-
-
 }

@@ -3,38 +3,57 @@
 @using Web.Services
 @inject PizzasService PizzasService
 @inject CartService CartService
-@inject NavigationManager NavigationManager
+@inject NavigationManager NavManager
 @inject HttpClient Http
 
-<h1>Our Menu</h1>
 
-@if (pizzas == null)
-{
-    <p>Loading pizzas...</p>
-}
-else
-{
-    <div class="menu-grid">
+<section class="menu-header">
+    <h2>Our Menu</h2>
+</section>
+
+<div class="menu-grid">
+    @if (pizzas == null)
+    {
+        <p>Loading pizzas...</p>
+    }
+    else if (!pizzas.Any())
+    {
+        <p>No pizzas found.</p>
+    }
+    else
+    {
         @foreach (var pizza in pizzas)
         {
             <div class="pizza-card" key="@pizza.Id">
-
-                <h2>@pizza.Name</h2>
                 <img src="@GetPizzaImageUrl(pizza)" alt="@pizza.Name" class="pizza-image" />
-                <p>@pizza.Description.Text</p>
-                <p>Price: $@pizza.Price</p>
-                <p>Weight: @pizza.Description.Weight gramm</p>
-                <ul>
-                    @foreach (var ingredient in pizza.Description.Ingredients)
-                    {
-                        <li>@ingredient</li>
-                    }
-                </ul>
-                <button @onclick="() => AddToCart(pizza)">Add to Cart</button>
+                <div class="pizza-info">
+                    <div>
+                        <h3 class="pizza-title">@pizza.Name</h3>
+                        <p class="pizza-description">@pizza.Description.Text</p>
+
+                        <div class="pizza-meta">
+                            <p class="pizza-price">Price: $@pizza.Price</p>
+                            <p class="pizza-weight">Weight: @pizza.Description.Weight g</p>
+
+                            <ul class="pizza-ingredients">
+                                @foreach (var ingredient in pizza.Description.Ingredients.Take(5))
+                                {
+                                    <li>@ingredient</li>
+                                }
+                                @if (pizza.Description.Ingredients.Count > 5)
+                                {
+                                    <li>+ @(pizza.Description.Ingredients.Count - 5) more</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+
+                    <button class="add-to-cart-btn" @onclick="() => AddToCart(pizza)">Add to Cart</button>
+                </div>
             </div>
         }
-    </div>
-}
+    }
+</div>
 
 @code {
     private Pizza[]? pizzas;
@@ -49,7 +68,10 @@ else
         await CartService.AddItemAsync(pizza);
         StateHasChanged();
     }
-
+    private void Logout()
+    {
+        NavManager.NavigateTo("/admin/login");
+    }
     private string GetPizzaImageUrl(Pizza pizza)
     {
         if (string.IsNullOrEmpty(pizza.PhotoPath) || pizza.PhotoPath == " ")
